@@ -1,0 +1,310 @@
+namespace my.name.space ;
+
+use com.ibm.streams.opencv::* ;
+use com.ibm.streams.opencv::AddText ;
+use com.ibm.streams.opencv::Collage ;
+use com.ibm.streams.opencv::Crop ;
+use com.ibm.streams.opencv::CvtColor ;
+use com.ibm.streams.opencv::DrawCircles ;
+use com.ibm.streams.opencv::IplImage ;
+use com.ibm.streams.opencv::MotionDetection ;
+use com.ibm.streams.opencv::SaveImage ;
+use com.ibm.streams.opencv::SaveToFile ;
+use com.ibm.streams.opencv::Stats ;
+use com.ibm.streams.opencv::X11Viewer ;
+
+composite C_Video_Analytics_Color
+{
+	graph
+		() as Viewer_Color_Analytics = X11Viewer(DrawHistogram_17_out0 as
+			inPort0Alias)
+		{
+			param
+				display : ":0.0" ;
+				title : "Color Analytics" ;
+		}
+
+		(stream<IplImage> final) as Foreground = Import()
+		{
+			param
+				subscription : source == "video_Foreground" ;
+		}
+
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list> Custom_14_out0 as outPort)
+			as Color_Analytics = Custom(final as imagePort)
+		{
+			logic
+				state :
+				{
+				//TEMP variables instantiated at startup
+					mutable list<uint8> imageData ;
+					mutable IplImage myData ;
+					mutable int32 rgbSUM_ch1 ;
+					mutable int32 allChannel = 0 ;
+					mutable int32 area ;
+					mutable int32 rgbSUM_ch2 ;
+					mutable int32 rgbSUM_ch3 ;
+					mutable rstring text = "" ;
+					mutable timestamp time ;
+					mutable int32 ch1_bin ;
+					mutable int32 ch2_bin ;
+					mutable int32 ch3_bin ;
+					mutable int32 chAll_bin ;
+					mutable int32 CH1 ;
+					mutable int32 CH2 ;
+					mutable int32 CH3 ;
+
+					//draw histogram stuff
+					mutable list<int32> x_list = [ 0, 16, 32, 48, 64, 80, 96, 112, 128, 144,
+						160, 176, 192, 208, 224 ] ;
+					mutable list<int32> y_list_ch1 = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0 ] ;
+					mutable list<int32> y_list_ch2 = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0 ] ;
+					mutable list<int32> y_list_ch3 = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0 ] ;
+					mutable list<int32> y_list_chAll = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0 ] ;
+						//mutable list<int32> width_list = [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 ] ;
+					mutable list<int32> width_list = [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+						1, 1 ] ;
+					decimal32 absolutHeight = 40000 ;
+				}
+
+				onTuple imagePort :
+				{
+					mutable list<int32> [ 16 ] hist_ch1 = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0 ] ;
+					mutable list<int32> [ 16 ] hist_ch2 = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0 ] ;
+					mutable list<int32> [ 16 ] hist_ch3 = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0 ] ;
+					mutable list<int32> [ 16 ] hist_chAll = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0 ] ;
+					rgbSUM_ch1 = 0 ;
+					area = 0 ;
+					allChannel = 0 ;
+					rgbSUM_ch2 = 0 ;
+					rgbSUM_ch3 = 0 ;
+					imageData = imagePort.ipl_data ;
+					time = getTimestamp() ;
+					for(int32 i in range(0, 96000))
+					{
+					//fetch pixel data
+						CH1 =(int32) imageData [ i * 3 ] ;
+						CH2 =(int32) imageData [ 1 + i * 3 ] ;
+						CH3 =(int32) imageData [ 2 + i * 3 ] ;
+						//Channel 1 - BLUE -> Save CPU cyles
+						if(CH1 > 0)
+						{
+							rgbSUM_ch1 = rgbSUM_ch1 + CH1 ;
+							ch1_bin =((int32) floor((decimal32) CH1 / 16dw)) ;
+							hist_ch1 [ ch1_bin ] = hist_ch1 [ ch1_bin ] ++ ;
+						}
+
+						else
+						{
+							hist_ch1 [ 0 ] = hist_ch1 [ 0 ] ++ ;
+						}
+						//Channel 1 - GREEN -> Save CPU cyles
+						if(CH2 > 0)
+						{
+							rgbSUM_ch2 = rgbSUM_ch2 + CH2 ;
+							ch2_bin =((int32) floor((decimal32) CH2 / 16dw)) ;
+							hist_ch2 [ ch2_bin ] = hist_ch2 [ ch2_bin ] ++ ;
+						}
+
+						else
+						{
+							hist_ch2 [ 0 ] = hist_ch2 [ 0 ] ++ ;
+						}
+						//Channel 3 - RED -> Save CPU cyles
+						if(CH3 > 0)
+						{
+							rgbSUM_ch3 = rgbSUM_ch3 + CH3 ;
+							ch3_bin =((int32) floor((decimal32) CH3 / 16dw)) ;
+							hist_ch3 [ ch3_bin ] = hist_ch3 [ ch3_bin ] ++ ;
+						}
+
+						else
+						{
+							hist_ch3 [ 0 ] = hist_ch3 [ 0 ] ++ ;
+						}
+
+						//						//Channel 2 - GREEN
+						//						rgbSUM_ch2 = rgbSUM_ch2 + CH2 ;
+						//						allChannel = allChannel + CH2 ;
+						//						ch2_bin =((int32) floor((decimal32) CH2 / 16dw)) ;
+						//						hist_ch2 [ ch2_bin ] = hist_ch2 [ ch2_bin ] ++ ;
+						//						if(CH2 > 0)
+						//						{
+						//							ch2_count ++ ;
+						//							//							allChannel = allChannel +(int32) imageData [ i * 3 ] ;
+						//
+						//						}
+
+						//						//Channel 3 - RED
+						//						rgbSUM_ch3 = rgbSUM_ch3 + CH3 ;
+						//						allChannel = allChannel + CH3 ;
+						//						ch3_bin =((int32) floor((decimal32) CH3 / 16dw)) ;
+						//						hist_ch3 [ ch3_bin ] = hist_ch3 [ ch3_bin ] ++ ;
+						//						if(CH3 > 0)
+						//						{
+						//							ch3_count ++ ;
+						//														allChannel = allChannel +(int32) imageData [ i * 3 ] ;
+						//
+						//						}
+
+						//						rgbSUM_ch2 = rgbSUM_ch2 +(int32) imageData [ 1 + i * 3 ] ;
+						//						if(imageData [ 1 + i * 3 ] > 0ub)
+						//						{
+						//							ch2_count ++ ;
+						//							allChannel = allChannel +(int32) imageData [ 1 + i * 3 ] ;
+						//						}
+						//
+						//						rgbSUM_ch3 = rgbSUM_ch3 +(int32) imageData [ 2 + i * 3 ] ;
+						//						if(imageData [ 2 + i * 3 ] > 0ub)
+						//						{
+						//							ch3_count ++ ;
+						//							allChannel = allChannel +(int32) imageData [ 1 + i * 3 ] ;
+						//						}
+						//
+						allChannel = CH1 + CH2 + CH3 ;
+						chAll_bin =((int32) floor((decimal32)(allChannel) / 48dw)) ;
+						hist_chAll [ chAll_bin ] = hist_chAll [ chAll_bin ] ++ ;
+						if(allChannel > 30) area ++ ;
+					}
+
+					//calculate coordinates for Histogram visualization
+					for(int32 i in range(1, 16))
+					{
+						y_list_ch1 [ i - 1 ] = 390 -(int32)(((decimal32) hist_ch1 [ i ] /
+							absolutHeight) * 380.0dw) ;
+						y_list_ch2 [ i - 1 ] = 390 -(int32)(((decimal32) hist_ch2 [ i ] /
+							absolutHeight) * 380.0dw) ;
+						y_list_ch3 [ i - 1 ] = 390 -(int32)(((decimal32) hist_ch3 [ i ] /
+							absolutHeight) * 380.0dw) ;
+						y_list_chAll [ i - 1 ] = 390 -(int32)(((decimal32) hist_chAll [ i ]
+							/(absolutHeight * 3.0dw)) * 380.0dw) ;
+					}
+
+					myData = imagePort ;
+					text = "TIME: " +(rstring) hour(time) + ":" +(rstring) minute(time) + ":"
+						+(rstring) second(time) + "." +(rstring) getNanoseconds(time) +
+						"\nEPOCH: " +(rstring) time + "\nAREA: " +(rstring) area + "\nR (abs): "
+						+(rstring) rgbSUM_ch3 + " \nG (abs): " +(rstring) rgbSUM_ch2 +
+						"\nB (abs): " +(rstring) rgbSUM_ch1 ;
+					submit({ ipl_data = imagePort.ipl_data, ipl_channels =
+						imagePort.ipl_channels, ipl_depth = imagePort.ipl_depth, ipl_height =
+						imagePort.ipl_height, ipl_width = imagePort.ipl_width, text = text, time
+						= time, area = area, hist_ch1 = hist_ch1, hist_ch2 = hist_ch2, hist_ch3 =
+						hist_ch3, hist_chAll = hist_chAll, sum_ch1 = rgbSUM_ch1, sum_ch2 =
+						rgbSUM_ch2, sum_ch3 = rgbSUM_ch3, sum_chAll = rgbSUM_ch1 + rgbSUM_ch2 +
+						rgbSUM_ch3, x_list = x_list, y_list_ch1 = y_list_ch1, y_list_ch2 =
+						y_list_ch2, y_list_ch3 = y_list_ch3, y_list_chAll = y_list_chAll,
+						width_list = width_list, height_list = width_list }, outPort) ;
+				}
+
+			}
+
+		(stream<timestamp time, int32 object, int32 objectClass, int32 area,
+			int32 sum_ch1, int32 sum_ch2, int32 sum_ch3, int32 sum_chAll,
+			int32 hist_ch1_0, int32 hist_ch1_1, int32 hist_ch1_2, int32 hist_ch1_3,
+			int32 hist_ch1_4, int32 hist_ch1_5, int32 hist_ch1_6, int32 hist_ch1_7,
+			int32 hist_ch1_8, int32 hist_ch1_9, int32 hist_ch1_10, int32 hist_ch1_11,
+			int32 hist_ch1_12, int32 hist_ch1_13, int32 hist_ch1_14, int32 hist_ch1_15,
+			int32 hist_ch2_0, int32 hist_ch2_1, int32 hist_ch2_2, int32 hist_ch2_3,
+			int32 hist_ch2_4, int32 hist_ch2_5, int32 hist_ch2_6, int32 hist_ch2_7,
+			int32 hist_ch2_8, int32 hist_ch2_9, int32 hist_ch2_10, int32 hist_ch2_11,
+			int32 hist_ch2_12, int32 hist_ch2_13, int32 hist_ch2_14, int32 hist_ch2_15,
+			int32 hist_ch3_0, int32 hist_ch3_1, int32 hist_ch3_2, int32 hist_ch3_3,
+			int32 hist_ch3_4, int32 hist_ch3_5, int32 hist_ch3_6, int32 hist_ch3_7,
+			int32 hist_ch3_8, int32 hist_ch3_9, int32 hist_ch3_10, int32 hist_ch3_11,
+			int32 hist_ch3_12, int32 hist_ch3_13, int32 hist_ch3_14, int32 hist_ch3_15,
+			int32 hist_chAll_0, int32 hist_chAll_1, int32 hist_chAll_2,
+			int32 hist_chAll_3, int32 hist_chAll_4, int32 hist_chAll_5,
+			int32 hist_chAll_6, int32 hist_chAll_7, int32 hist_chAll_8,
+			int32 hist_chAll_9, int32 hist_chAll_10, int32 hist_chAll_11,
+			int32 hist_chAll_12, int32 hist_chAll_13, int32 hist_chAll_14,
+			int32 hist_chAll_15> Custom_15_out0) as Format_Data = Custom(Custom_14_out0)
+			{
+				logic
+					onTuple Custom_14_out0 :
+					{
+						submit({ time = time, object = 0, objectClass = 0, area = area, sum_ch1 =
+							sum_ch1, sum_ch2 = sum_ch2, sum_ch3 = sum_ch3, sum_chAll = sum_chAll,
+							hist_ch1_0 = hist_ch1 [ 0 ], hist_ch1_1 = hist_ch1 [ 1 ], hist_ch1_2 =
+							hist_ch1 [ 2 ], hist_ch1_3 = hist_ch1 [ 3 ], hist_ch1_4 = hist_ch1 [ 4
+							], hist_ch1_5 = hist_ch1 [ 5 ], hist_ch1_6 = hist_ch1 [ 6 ], hist_ch1_7
+							= hist_ch1 [ 7 ], hist_ch1_8 = hist_ch1 [ 8 ], hist_ch1_9 = hist_ch1 [ 9
+							], hist_ch1_10 = hist_ch1 [ 10 ], hist_ch1_11 = hist_ch1 [ 11 ],
+							hist_ch1_12 = hist_ch1 [ 12 ], hist_ch1_13 = hist_ch1 [ 13 ],
+							hist_ch1_14 = hist_ch1 [ 14 ], hist_ch1_15 = hist_ch1 [ 15 ], hist_ch2_0
+							= hist_ch2 [ 0 ], hist_ch2_1 = hist_ch2 [ 1 ], hist_ch2_2 = hist_ch2 [ 2
+							], hist_ch2_3 = hist_ch2 [ 3 ], hist_ch2_4 = hist_ch2 [ 4 ], hist_ch2_5
+							= hist_ch2 [ 5 ], hist_ch2_6 = hist_ch2 [ 6 ], hist_ch2_7 = hist_ch2 [ 7
+							], hist_ch2_8 = hist_ch2 [ 8 ], hist_ch2_9 = hist_ch2 [ 9 ], hist_ch2_10
+							= hist_ch2 [ 10 ], hist_ch2_11 = hist_ch2 [ 11 ], hist_ch2_12 = hist_ch2
+							[ 12 ], hist_ch2_13 = hist_ch2 [ 13 ], hist_ch2_14 = hist_ch2 [ 14 ],
+							hist_ch2_15 = hist_ch2 [ 15 ], hist_ch3_0 = hist_ch3 [ 0 ], hist_ch3_1 =
+							hist_ch3 [ 1 ], hist_ch3_2 = hist_ch3 [ 2 ], hist_ch3_3 = hist_ch3 [ 3
+							], hist_ch3_4 = hist_ch3 [ 4 ], hist_ch3_5 = hist_ch3 [ 5 ], hist_ch3_6
+							= hist_ch3 [ 6 ], hist_ch3_7 = hist_ch3 [ 7 ], hist_ch3_8 = hist_ch3 [ 8
+							], hist_ch3_9 = hist_ch3 [ 9 ], hist_ch3_10 = hist_ch3 [ 10 ],
+							hist_ch3_11 = hist_ch3 [ 11 ], hist_ch3_12 = hist_ch3 [ 12 ],
+							hist_ch3_13 = hist_ch3 [ 13 ], hist_ch3_14 = hist_ch3 [ 14 ],
+							hist_ch3_15 = hist_ch3 [ 15 ], hist_chAll_0 = hist_chAll [ 0 ],
+							hist_chAll_1 = hist_chAll [ 1 ], hist_chAll_2 = hist_chAll [ 2 ],
+							hist_chAll_3 = hist_chAll [ 3 ], hist_chAll_4 = hist_chAll [ 4 ],
+							hist_chAll_5 = hist_chAll [ 5 ], hist_chAll_6 = hist_chAll [ 6 ],
+							hist_chAll_7 = hist_chAll [ 7 ], hist_chAll_8 = hist_chAll [ 8 ],
+							hist_chAll_9 = hist_chAll [ 9 ], hist_chAll_10 = hist_chAll [ 10 ],
+							hist_chAll_11 = hist_chAll [ 11 ], hist_chAll_12 = hist_chAll [ 12 ],
+							hist_chAll_13 = hist_chAll [ 13 ], hist_chAll_14 = hist_chAll [ 14 ],
+							hist_chAll_15 = hist_chAll [ 15 ] }, Custom_15_out0) ;
+					}
+
+			}
+
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list> CopyOfAddText_16_out0) as
+			Add_Text_Info = AddText(Custom_14_out0)
+			{
+				param
+					text : Custom_14_out0.text ;
+					forecolor : [ 0, 255, 0 ] ;
+					size : 0.5 ;
+			}
+
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list, list<int32> y_list>
+			DrawHistogram_17_out0) as DrawHistogram_17 =
+				Visualize_Histogram(CopyOfAddText_16_out0)
+			{
+			}
+
+		() as Export_Color_Analytics = Export(DrawHistogram_17_out0 as inPort0Alias)
+			{
+				param
+					properties : { topic = "color_analytics" } ;
+			}
+
+	}
+
+

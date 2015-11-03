@@ -1,0 +1,101 @@
+namespace my.name.space ;
+
+use com.ibm.streams.opencv::DrawCircles ;
+use com.ibm.streams.opencv::DrawRectangles ;
+
+composite Visualize_Histogram(input stream<list<uint8> ipl_data, int32 ipl_channels,
+	int32 ipl_depth, int32 ipl_height, int32 ipl_width, rstring text,
+	timestamp time, int32 area, list<int32> [ 16 ] hist_ch1, list<int32> [ 16
+	] hist_ch2, list<int32> [ 16 ] hist_ch3, list<int32> [ 16 ] hist_chAll,
+	int32 sum_ch1, int32 sum_ch2, int32 sum_ch3, int32 sum_chAll,
+	list<int32> x_list, list<int32> y_list_ch1, list<int32> y_list_ch2,
+	list<int32> y_list_ch3, list<int32> y_list_chAll, list<int32> width_list,
+	list<int32> height_list> In0 ; output stream<list<uint8> ipl_data,
+	int32 ipl_channels, int32 ipl_depth, int32 ipl_height, int32 ipl_width,
+	rstring text, timestamp time, int32 area, list<int32> [ 16 ] hist_ch1,
+	list<int32> [ 16 ] hist_ch2, list<int32> [ 16 ] hist_ch3, list<int32> [ 16
+	] hist_chAll, int32 sum_ch1, int32 sum_ch2, int32 sum_ch3, int32 sum_chAll,
+	list<int32> x_list, list<int32> y_list_ch1, list<int32> y_list_ch2,
+	list<int32> y_list_ch3, list<int32> y_list_chAll, list<int32> width_list,
+	list<int32> height_list, list<int32> y_list> Out0)
+{
+	graph
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list, list<int32> y_list>
+			Functor_4_out0) as Functor_4 = Functor(In0)
+		{
+			output
+				Functor_4_out0 : y_list = y_list_ch3 ;
+		}
+
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list, list<int32> y_list> Out0)
+			as DrawCircles_7 = DrawRectangles(DrawRectangles_9_out0 as inPort0Alias)
+		{
+			param
+				color : [ 255, 255, 255 ] ;
+				thickness : 2 ;
+		}
+
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list, list<int32> y_list>
+			DrawRectangles_8_out0) as DrawRectangles_8 = DrawRectangles(Functor_4_out0)
+		{
+			param
+				color : [ 255, 0, 0 ] ;
+				thickness : 2 ;
+			output
+				DrawRectangles_8_out0 : x_list = x_list + 4, y_list = y_list_ch2 ;
+		}
+
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list, list<int32> y_list>
+			DrawRectangles_7_out0) as DrawRectangles_7 =
+			DrawRectangles(DrawRectangles_8_out0 as inPort0Alias)
+		{
+			param
+				color : [ 0, 255, 0 ] ;
+				thickness : 2 ;
+			output
+				DrawRectangles_7_out0 : y_list = y_list_ch1, x_list = x_list + 4 ;
+		}
+
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list, list<int32> y_list>
+			DrawRectangles_9_out0) as DrawRectangles_9 =
+			DrawRectangles(DrawRectangles_7_out0 as inPort0Alias)
+		{
+			param
+				color : [ 0, 0, 255 ] ;
+				thickness : 2 ;
+			output
+				DrawRectangles_9_out0 : x_list = x_list + 4, y_list = y_list_chAll ;
+		}
+
+}
+

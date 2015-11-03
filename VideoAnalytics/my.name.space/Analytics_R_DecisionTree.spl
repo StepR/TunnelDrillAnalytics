@@ -1,0 +1,72 @@
+namespace my.name.space ;
+
+//use com.ibm.streams.rproject::*;
+use com.ibm.streams.rproject::RScript ;
+use com.ibm.streams.opencv::X11Viewer ;
+use com.ibm.streams.opencv::AddText ;
+
+composite D_Analytics_R_DecisionTree
+{
+	graph
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list, list<int32> y_list,
+			rstring prediction, float32 probability> RScript_1_out0) as R_Prediction =
+			RScript(Import_2_out0)
+		{
+			param
+				rScriptFileName :
+					"/home/streamsadmin/workspace/VideoAnalytics/data/r_analytics/score.r" ;
+				streamAttributes : area, sum_ch1, sum_ch2, sum_ch3 ;
+				rObjects : "area", "sum_ch1", "sum_ch2", "sum_ch3" ;
+				initializationScriptFileName :
+					"/home/streamsadmin/workspace/VideoAnalytics/data/r_analytics/build_model.r" ;
+			output
+				RScript_1_out0 : prediction = fromR("pred"), probability = fromR("prop") ;
+		}
+
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list, list<int32> y_list>
+			Import_2_out0) as Import_Color_Analytics = Import()
+		{
+			param
+				subscription : topic == "color_analytics" ;
+		}
+
+		() as Viewer_Prediction = X11Viewer(AddText_4_out0)
+		{
+			param
+				display : ":0.0" ;
+				title : "Object Class Prediction" ;
+		}
+
+		(stream<list<uint8> ipl_data, int32 ipl_channels, int32 ipl_depth,
+			int32 ipl_height, int32 ipl_width, rstring text, timestamp time, int32 area,
+			list<int32> [ 16 ] hist_ch1, list<int32> [ 16 ] hist_ch2, list<int32> [ 16
+			] hist_ch3, list<int32> [ 16 ] hist_chAll, int32 sum_ch1, int32 sum_ch2,
+			int32 sum_ch3, int32 sum_chAll, list<int32> x_list, list<int32> y_list_ch1,
+			list<int32> y_list_ch2, list<int32> y_list_ch3, list<int32> y_list_chAll,
+			list<int32> width_list, list<int32> height_list, list<int32> y_list>
+			AddText_4_out0) as AddText_Prediction = AddText(RScript_1_out0 as
+			inPort0Alias)
+		{
+			param
+				text : "Object Class Prediction:\n" + prediction + "\nConfidence:\n"
+					+(rstring) probability ;
+				forecolor : [ 0, 255, 255 ] ;
+				y : 200 ;
+				thickness : 1 ;
+				size : 0.5 ;
+		}
+
+}
+

@@ -1,0 +1,133 @@
+namespace my.name.space ;
+/*
+ * # Licensed Materials - Property of IBM
+ * # Copyright IBM Corp. 2012
+ * # US Government Users Restricted Rights - Use, duplication or
+ * # disclosure restricted by GSA ADP Schedule Contract with
+ * # IBM Corp.
+ */
+use com.ibm.streams.opencv::* ;
+use com.ibm.streams.opencv::Crop ;
+use com.ibm.streams.opencv::SaveImage ;
+use com.ibm.streams.opencv::AddText ;
+use com.ibm.streams.opencv::IplImage ;
+use com.ibm.streams.opencv::MotionDetection ;
+use com.ibm.streams.opencv::X11Viewer ;
+use com.ibm.streams.opencv::Stats ;
+use com.ibm.streams.opencv::SaveToFile ;
+use com.ibm.streams.opencv::DrawCircles ;
+use com.ibm.streams.opencv::Collage ;
+use com.ibm.streams.opencv::CvtColor ;
+use com.ibm.streams.opencv::Blank ;
+
+composite B_Analytics_BGFG_Sep
+{
+	graph
+		(stream<IplImage> smth) as Smooth_Video = Smooth(Crop_8_out0 as inPort0Alias)
+		{
+			param
+				iteration : 5 ;
+			config
+				placement : partitionColocation("P1") ;
+		}
+
+		(stream<IplImage> cb) as Learn_Background = CodeBook(smth)
+		{
+			param
+				time : 20 ;
+				banner : 1 ;
+			config
+				placement : partitionColocation("P1") ;
+		}
+
+		(stream<IplImage> cb_cc) as Reduce_Noise = ConnectedComponents(cb)
+		{
+			param
+				hull : 0 ;
+				perim : 4.0w ;
+			config
+				placement : partitionColocation("P1") ;
+		}
+
+		(stream<IplImage> cb_cc_color) as Convert_Color = CvtColor(cb_cc)
+		{
+			param
+				channels : 3 ;
+				cvt_param : "CV_GRAY2BGR" ;
+			config
+				placement : partitionColocation("P1") ;
+		}
+
+		(stream<IplImage> final) as Background_Removal = Apply2(Crop_8_out0 as
+			inPort0Alias ; cb_cc_color)
+		{
+			param
+				transform : "cvAnd" ;
+			config
+				placement : partitionColocation("P1") ;
+		}
+
+		(stream<IplImage> Crop_8_out0) as Crop_Video = Crop(Import_15_out0 as
+			inPort0Alias)
+		{
+			param
+				topleft : 60, 40 ;
+				bottomright : 300, 440 ;
+		}
+
+		() as Export_Foreground = Export(final)
+		{
+			param
+				properties : { source = "video_Foreground" } ;
+		}
+
+		() as Export_Crop = Export(Crop_8_out0)
+		{
+			param
+				properties : { kind = "crop" } ;
+		}
+
+		() as Export_Smooth = Export(smth)
+		{
+			param
+				properties : { kind = "smooth" } ;
+		}
+
+		() as Export_CodeBook = Export(cb as inPort0Alias)
+		{
+			param
+				properties : { kind = "CodeBook" } ;
+		}
+
+		() as Export_ConnectedComponents = Export(cb_cc_color)
+		{
+			param
+				properties : { kind = "connectedComponents" } ;
+		}
+
+		(stream<IplImage> Blank_4_out0) as Generate_Separator = Blank()
+		{
+			param
+				channels : 3 ;
+				color : 255ub, 0ub, 0ub ;
+				fps : 5 ;
+				height : 400 ;
+				width : 7 ;
+			config
+				placement : partitionColocation("P3") ;
+		}
+
+		() as Export_Separator = Export(Blank_4_out0)
+		{
+			param
+				properties : { kind = "separator" } ;
+		}
+
+		(stream<IplImage> Import_15_out0) as Import_Video = Import()
+		{
+			param
+				subscription : source == "Drill_Equipment" ;
+		}
+
+}
+

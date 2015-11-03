@@ -1,0 +1,22 @@
+namespace my.name.space ;
+
+use com.ibm.streams.opencv::X11Viewer ;
+use com.ibm.streams.opencv::IplImage ;
+
+composite X_bgfg_viewer
+{
+	graph
+		(stream<IplImage> Import_2_out0) as Import_Foreground = Import()
+		{
+			param
+				subscription : source == "video_Foreground" ;
+		}
+
+		() as X11Viewer_2 = X11Viewer(Import_2_out0)
+		{
+			param
+				display : ":0.0" ;
+		}
+
+}
+

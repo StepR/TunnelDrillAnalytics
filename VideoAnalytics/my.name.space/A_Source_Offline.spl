@@ -1,0 +1,32 @@
+namespace my.name.space ;
+
+use com.ibm.streams.opencv::CaptureFromFile ;
+use com.ibm.streams.opencv::X11Viewer ;
+use com.ibm.streams.opencv::IplImage ;
+
+composite A_Source_Offline
+{
+	graph
+		(stream<IplImage> CaptureFromFile_1_out0) as CaptureFromFile_1 =
+			CaptureFromFile()
+		{
+			param
+				file :
+					"/home/streamsadmin/workspace/VideoAnalytics/data/capture_video/capture3_h_super.avi" ;
+				rate : 2 ;
+				repeat : 0 ;
+		}
+
+		//		() as X11Viewer_2 = X11Viewer(CaptureFromFile_1_out0)
+		//		{
+		//			param
+		//				display : ":0.0" ;
+		//		}
+		() as VideoConnector = Export(CaptureFromFile_1_out0)
+		{
+			param
+				properties : { source = "Drill_Equipment" } ;
+		}
+
+}
+

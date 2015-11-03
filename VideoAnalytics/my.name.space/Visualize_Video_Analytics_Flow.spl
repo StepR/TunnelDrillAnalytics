@@ -1,0 +1,146 @@
+namespace my.name.space ;
+
+use com.ibm.streams.opencv::CvtColor ;
+use com.ibm.streams.opencv::Collage ;
+use com.ibm.streams.opencv::Blank ;
+use com.ibm.streams.opencv::X11Viewer ;
+use com.ibm.streams.opencv::IplImage ;
+use com.ibm.streams.opencv::AddText ;
+use com.ibm.streams.opencv::Stats ;
+use com.ibm.streams.opencv::SaveToFile ;
+
+composite B_Analytics_BGFG_Sep_Visual()
+{
+	graph
+		(stream<IplImage> CvtColor_18_out0) as ConvertColor_CodeBook =
+			CvtColor(Import_3_out0 as inPort0Alias)
+		{
+			param
+				cvt_param : "CV_GRAY2BGR" ;
+				channels : 3 ;
+		}
+
+		(stream<IplImage> Collage_2_out0) as Merge_Videos = Collage(AddText_7_out0 as
+			inPort0Alias ; Separator_Frame as inPort1Alias ; AddText_8_out0 as
+			inPort2Alias ; Separator_Frame as inPort3Alias ; codeb ; Separator_Frame as
+			inPort5Alias ; AddText_9_out0 as inPort6Alias ; Separator_Frame as
+			inPort7Alias ; AddText_10_out0 as inPort8Alias)
+		{
+		}
+
+//		() as SaveToFile_3 = SaveToFile(Collage_2_out0)
+//		{
+//			param
+//				filename :
+//					"/home/streamsadmin/Lab_Workspaces_v2/workspace4/Project4/data/Foreground_extractor.avi" ;
+//				fourcc : "divx" ;
+//		}
+
+		() as Viewer_Video_Analytics = X11Viewer(Collage_2_out0 as inPort0Alias)
+		{
+			param
+				display : ":0.0" ;
+				title :
+					"Extracting the interesting - From raw image to background and foreground separation" ;
+		}
+
+		(stream<IplImage> Separator_Frame) as Synchronize = Gate(Import_7_out0 as
+			inPort0Alias ; Import_6_out0 as inPort1Alias)
+		{
+			param
+				maxUnackedTupleCount : 5u ;
+		}
+
+		(stream<IplImage> codeb) as AddText_CodeBook = AddText(CvtColor_18_out0)
+		{
+			param
+				text : "CodeBook" ;
+				forecolor : [ 0, 255, 0 ] ;
+				size : 0.8 ;
+				x : 10 ;
+				thickness : 2 ;
+		}
+
+		(stream<IplImage> AddText_7_out0) as AddText_Crop = AddText(Import_6_out0 as
+			inPort0Alias)
+		{
+			param
+				text : "Crop" ;
+				forecolor : [ 0, 255, 0 ] ;
+				size : 0.8 ;
+				x : 10 ;
+				thickness : 2 ;
+		}
+
+		(stream<IplImage> AddText_8_out0) as AddText_Smooth = AddText(Import_5_out0
+			as inPort0Alias)
+		{
+			param
+				text : "Smooth" ;
+				forecolor : [ 0, 255, 0 ] ;
+				size : 0.8 ;
+				x : 10 ;
+				thickness : 2 ;
+		}
+
+		(stream<IplImage> AddText_9_out0) as AddText_ConnectedComponents =
+			AddText(Import_4_out0 as inPort0Alias)
+		{
+			param
+				text : "Connected Comp." ;
+				forecolor : [ 0, 255, 0 ] ;
+				size : 0.8 ;
+				x : 10 ;
+				thickness : 2 ;
+		}
+
+		(stream<IplImage> AddText_10_out0) as AddText_Foreground =
+			AddText(Import_2_out0 as inPort0Alias)
+		{
+			param
+				text : "Apply2" ;
+				forecolor : [ 0, 255, 0 ] ;
+				size : 0.8 ;
+				x : 10 ;
+				thickness : 2 ;
+		}
+
+		(stream<IplImage> Import_6_out0) as Import_Crop = Import()
+		{
+			param
+				subscription : kind == "crop" ;
+		}
+
+		(stream<IplImage> Import_5_out0) as Import_Smooth = Import()
+		{
+			param
+				subscription : kind == "smooth" ;
+		}
+
+		(stream<IplImage> Import_3_out0) as Import_CodeBook = Import()
+		{
+			param
+				subscription : kind == "CodeBook" ;
+		}
+
+		(stream<IplImage> Import_4_out0) as Import_ConnectedComponents = Import()
+		{
+			param
+				subscription : kind == "connectedComponents" ;
+		}
+
+		(stream<IplImage> Import_2_out0) as Import_Foreground = Import()
+		{
+			param
+				subscription : source == "video_Foreground" ;
+		}
+
+		(stream<IplImage> Import_7_out0) as Import_Separator = Import()
+		{
+			param
+				subscription : kind == "separator" ;
+		}
+
+}
+
+

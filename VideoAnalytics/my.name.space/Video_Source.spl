@@ -1,0 +1,35 @@
+namespace my.name.space ;
+
+use com.ibm.streams.opencv::CaptureFromURL ;
+use com.ibm.streams.opencv::IplImage ;
+use com.ibm.streams.opencv::SaveToFile ;
+use com.ibm.streams.opencv::SaveImage ;
+
+composite A_Source
+{
+	graph
+		(stream<IplImage> vid0) as GetVideo = CaptureFromURL()
+		{
+			param
+				url : "http://172.20.10.5:8080/image.jpg" ;
+				rate : 4 ;
+				dieonerror : 0 ;
+		}
+
+		() as VideoConnector = Export(vid0)
+		{
+			param
+				properties : { source = "Drill_Equipment" } ;
+		}
+
+		//		() as SaveToFile_3 = SaveToFile(vid0)
+		//		{
+		//			param
+		//				filename :
+		//					"/home/streamsadmin/Lab_Workspaces_v2/workspace4/Project4/data/capture3.avi" ;
+		//				fourcc : "divx" ;
+		//				rate : 5 ;
+		//		}
+
+}
+
