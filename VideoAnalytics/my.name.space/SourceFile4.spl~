@@ -1,0 +1,68 @@
+namespace my.name.space ;
+
+type LocationType = rstring id, rstring time, float64 latitude,
+	float64 longitude, float64 speed, float64 heading ;
+
+composite MainComposite4
+{
+	graph
+		() as FileSink_1 = FileSink(Filtered)
+		{
+			param
+				file : "filtered.cars" ;
+				format : csv ;
+				quoteStrings : false ;
+		}
+
+		(stream<LocationType> Filtered) as Filter_1 = Filter(Throttle_1_out0)
+		{
+			param
+				filter : id in [ "C101", "C133" ] ;
+		}
+
+		(stream<rstring id, rstring time, float64 avgSpeed> Aggregate_1_out0) as
+			Aggregate_1 = Aggregate(Filtered as inPort0Alias)
+		{
+			window
+				inPort0Alias : tumbling, count(5), partitioned ;
+			param
+				partitionBy : id ;
+			output
+				Aggregate_1_out0 : avgSpeed = Average(speed) ;
+		}
+
+		() as FileSink_2 = FileSink(Aggregate_1_out0)
+		{
+			param
+				file : "average.speeds" ;
+				format : csv ;
+				quoteStrings : false ;
+		}
+
+		(stream<rstring file> DirectoryScan_1_out0) as DirectoryScan_1 =
+			DirectoryScan()
+		{
+			param
+				directory : "/home/streamsadmin/data" ;
+				pattern : ".*cars$" ;
+		}
+
+		(stream<LocationType> Observations) as FileSource_1 =
+			FileSource(DirectoryScan_1_out0)
+		{
+			param
+				format : csv ;
+		}
+
+		(stream<LocationType> Throttle_1_out0) as Throttle_1 = Throttle(Observations)
+		{
+			param
+				rate : 40.0 ;
+		}
+
+}
+
+
+
+
+
